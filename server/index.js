@@ -7,10 +7,12 @@ const port = process.env.PORT || 4000;
 const connectDB = require("./config/db");
 
 const authRoutes = require("./routes/authRoutes");
+const taskRoutes = require("./routes/taskRoutes");
 
 // Middleware: Parse incoming JSON bodies
 app.use(express.json());
 app.use("/api/auth", authRoutes);
+app.use("/api/tasks", taskRoutes);
 
 // GET route
 app.get("/", (req, res) => {
