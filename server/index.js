@@ -1,4 +1,5 @@
 require("dotenv").config();
+const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 const express = require("express");
 const app = express();
@@ -28,6 +29,12 @@ app.get("/api/health", (req, res) => {
 app.post("/api/echo", (req, res) => {
   res.send(req.body);
 });
+
+// Handle requests to unknown routes
+app.use(notFound);
+
+// Handle errors forwarded by next(error)
+app.use(errorHandler);
 
 // Start server after database connection
 const startServer = async () => {
