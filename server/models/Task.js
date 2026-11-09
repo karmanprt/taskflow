@@ -2,30 +2,35 @@ const mongoose = require("mongoose");
 
 const taskSchema = new mongoose.Schema(
   {
+    // The user who owns this task
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
     },
 
+    // Task title
     title: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
 
-    desciption: {
+    // Optional task description
+    description: {
       type: String,
-      trim: true
+      trim: true,
     },
 
+    // Whether the task is completed
     completed: {
       type: Boolean,
-      default: false
+      default: false,
     },
   },
   {
-    timestamps: true
+    // Automatically creates createdAt and updatedAt
+    timestamps: true,
   },
 );
 

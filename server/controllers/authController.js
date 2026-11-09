@@ -2,108 +2,134 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
-const registerUser = async (req, res) => {
+// Register a new user
+const registerUser = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
-    // Check required fields
-    if (!name || !email || !password) {
+    // Check that all required fields are present
+    if (
+      typeof name !== "string" ||
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      !name.trim() ||
+      !email.trim() ||
+      !password
+    ) {
       return res.status(400).json({
-        message: "Please provide name, email and password"
+        message: "Please provide name, email and password",
+      });
+    }
+
+    // Normalize user input
+    const normalizedName = name.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Basic email format check
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return res.status(400).json({
+        message: "Please provide a valid email address",
       });
     }
 
     // Check password length
     if (password.length < 6) {
       return res.status(400).json({
-        message: "Password must be at least 6 characters long"
+        message: "Password must be at least 6 characters long",
       });
     }
 
-    // Check whether email already exists
-    const existingUser = await User.findOne({ email });
+    // Check whether the email is already registered
+    const existingUser = await User.findOne({
+      email: normalizedEmail,
+    });
 
     if (existingUser) {
       return res.status(409).json({
-        message: "Email already registered"
+        message: "Email already registered",
       });
     }
 
-    // Hash password
+    // Hash the password before saving it
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create the user
     const newUser = await User.create({
-      name,
-      email,
-      password: hashedPassword
+      name: normalizedName,
+      email: normalizedEmail,
+      password: hashedPassword,
     });
 
-    // Send success response
+    // Return public user details only
     return res.status(201).json({
       message: "User registered successfully",
       user: {
         id: newUser._id,
         name: newUser.name,
-        email: newUser.email
-      }
+        email: newUser.email,
+      },
     });
-
   } catch (error) {
-    console.error("Registration error:", error);
-
-    return res.status(500).json({
-      message: "Server error"
-    });
+    // Forward unexpected errors to central error middleware
+    return next(error);
   }
 };
 
-const loginUser = async (req, res) => {
+// Log in an existing user
+const loginUser = async (req, res, next) => {
   try {
-    const { email, password } = req.body
+    const { email, password } = req.body;
 
-    // Check required fields
-    if (!email || !password) {
+    // Validate required fields and their types
+    if (
+      typeof email !== "string" ||
+      typeof password !== "string" ||
+      !email.trim() ||
+      !password
+    ) {
       return res.status(400).json({
-        message: "Please provide email and password"
+        message: "Please provide email and password",
       });
     }
-  
-    // Find user by email
-    const user = await User.findOne({ email });
 
-    // Check user and password
+    // Normalize email in the same way as registration
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Find the user
+    const user = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    // Compare the entered password with the stored hash
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({
-        message: "Invalid email or password"
+        message: "Invalid email or password",
       });
     }
-  
-    // Create JWT
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      {expiresIn: process.env.JWT_EXPIRES_IN }
-    );
 
-    // Send response
+    // Create a signed JWT
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_EXPIRES_IN,
+    });
+
+    // Return token and public user details
     return res.status(200).json({
-      message: "Login sucessful",
+      message: "Login successful",
       token,
       user: {
         id: user._id,
         name: user.name,
-        email: user.email
-      }
+        email: user.email,
+      },
     });
-
   } catch (error) {
-    console.error("Login error:", error);
-
-    return res.status(500).json({
-      message: "Server error"
-    })
+    // Forward unexpected errors to central error middleware
+    return next(error);
   }
-}
+};
 
-module.exports = { registerUser, loginUser };
+// Export controller functions
+module.exports = {
+  registerUser,
+  loginUser,
+};

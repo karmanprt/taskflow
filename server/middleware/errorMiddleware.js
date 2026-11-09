@@ -1,30 +1,45 @@
-// Middleware for handling requests to routes that don't exist
+// Handle requests to routes that do not exist
 const notFound = (req, res, next) => {
-  // Create an error containing the requested URL
   const error = new Error(`Not Found - ${req.originalUrl}`);
 
-  // Set the HTTP status code to 404
-  res.statusCode = 404;
+  // Mark this error as a 404
+  error.statusCode = 404;
 
-  // Forward the error to the central error handler
   next(error);
 };
 
 // Central error-handling middleware
 const errorHandler = (err, req, res, next) => {
-  // Start with the error message
+  // Start with the original error message
   let message = err.message;
+  let statusCode = err.statusCode || res.statusCode;
 
-  // Handle invalid MongoDB ObjectIds
+  // Invalid MongoDB ObjectId
   if (err.name === "CastError") {
-    res.statusCode = 400;
+    statusCode = 400;
     message = "Invalid id";
-  } else {
-    // Preserve an existing error status, otherwise use 500
-    res.statusCode = res.statusCode !== 200 ? res.statusCode : 500;
   }
 
-  // Build the error response
+  // Mongoose schema validation failure
+  else if (err.name === "ValidationError") {
+    statusCode = 400;
+    message = Object.values(err.errors)
+      .map((item) => item.message)
+      .join(", ");
+  }
+
+  // MongoDB duplicate-key error
+  else if (err.code === 11000) {
+    statusCode = 409;
+    message = "A record with this value already exists";
+  }
+
+  // Use 500 for unexpected errors without a valid status
+  if (!statusCode || statusCode === 200) {
+    statusCode = 500;
+  }
+
+  // Build the JSON error response
   const response = {
     message,
   };
@@ -34,11 +49,10 @@ const errorHandler = (err, req, res, next) => {
     response.stack = err.stack;
   }
 
-  // Send the final JSON error response
-  res.status(res.statusCode).json(response);
+  return res.status(statusCode).json(response);
 };
 
-// Export both middleware functions
+// Export middleware functions
 module.exports = {
   notFound,
   errorHandler,
