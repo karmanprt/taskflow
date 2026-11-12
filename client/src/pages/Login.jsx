@@ -1,20 +1,36 @@
-
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+
 import FormInput from "../components/FormInput";
+import { loginUser } from "../services/authService";
+import useAuth from "../context/useAuth";
+
+import AuthLayout from "../components/AuthLayout";
 
 function Login() {
+  // Allows programmatic navigation
+  const navigate = useNavigate();
+
+  // Access the login function from AuthContext
+  const { login } = useAuth();
+
   // Stores login form values
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
 
-  // Stores validation errors
+  // Stores frontend validation errors
   const [errors, setErrors] = useState({});
 
   // Controls password visibility
   const [showPassword, setShowPassword] = useState(false);
+
+  // Tracks whether the login request is in progress
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Stores backend or network errors
+  const [serverError, setServerError] = useState("");
 
   // Updates the input that the user changes
   function handleChange(e) {
@@ -31,6 +47,9 @@ function Login() {
       ...prevErrors,
       [name]: "",
     }));
+
+    // Clear previous server error
+    setServerError("");
   }
 
   // Validates the login form
@@ -49,8 +68,10 @@ function Login() {
   }
 
   // Handles form submission
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
+
+    setServerError("");
 
     const validationErrors = validate();
 
@@ -61,16 +82,47 @@ function Login() {
       return;
     }
 
-    // API integration will happen on Day 9
-    console.log("Login data:", formData);
+    setIsSubmitting(true);
+
+    try {
+      // Send login credentials to the backend
+      const data = await loginUser({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      // Save the returned token and user in AuthContext
+      login(data);
+
+      // Navigate to the Tasks page
+      navigate("/");
+    } catch (error) {
+      const message = error.response?.data?.message;
+
+      if (message) {
+        setServerError(message);
+      } else if (!error.response) {
+        setServerError("Cannot reach the server. Please try again.");
+      } else {
+        setServerError("Something went wrong. Please try again.");
+      }
+    } finally {
+      // Reset loading state
+      setIsSubmitting(false);
+    }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-8">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-
-        <h1 className="mb-6 text-center text-2xl font-bold">
-          Welcome Back
+    <AuthLayout
+      panelSide="left"
+      heading="Welcome Back!"
+      description="Your tasks are waiting. Sign in and continue making progress."
+      switchLabel="Create an account"
+      switchTo="/register"
+    >
+      <>
+        <h1 className="mb-6 text-center text-2xl font-bold text-slate-900">
+          Sign in to your account
         </h1>
 
         <form onSubmit={handleSubmit}>
@@ -106,12 +158,22 @@ function Login() {
             </button>
           </div>
 
+          {/* Always reserve space for backend errors */}
+          <div className="mt-1 mb-4 min-h-10">
+            {serverError && (
+              <p className="text-sm leading-5 text-red-500" role="alert">
+                {serverError}
+              </p>
+            )}
+          </div>
+
           {/* Submit button */}
           <button
             type="submit"
-            className="w-full rounded-md bg-blue-600 py-2 font-semibold text-white hover:bg-blue-700"
+            disabled={isSubmitting}
+            className="w-full rounded-md bg-blue-600 py-2 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Login
+            {isSubmitting ? "Logging in..." : "Login"}
           </button>
         </form>
 
@@ -125,9 +187,8 @@ function Login() {
             Register
           </Link>
         </p>
-
-      </div>
-    </div>
+      </>
+    </AuthLayout>
   );
 }
 

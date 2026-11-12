@@ -1,9 +1,13 @@
-
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+
 import FormInput from "../components/FormInput";
+import { registerUser } from "../services/authService";
+import AuthLayout from "../components/AuthLayout";
 
 function Register() {
+  const navigate = useNavigate();
+
   // Stores registration form values
   const [formData, setFormData] = useState({
     name: "",
@@ -12,28 +16,71 @@ function Register() {
     confirmPassword: "",
   });
 
-  // Stores validation errors
+  // Stores frontend validation errors
   const [errors, setErrors] = useState({});
 
   // Independent password visibility states
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Tracks registration request status
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Stores backend or network errors
+  const [serverError, setServerError] = useState("");
+
   // Updates the input that the user changes
   function handleChange(e) {
     const { name, value } = e.target;
 
-    // Update the corresponding form field
-    setFormData((prevData) => ({
-      ...prevData,
+    const updatedData = {
+      ...formData,
       [name]: value,
-    }));
+    };
 
-    // Clear the error for the field being corrected
-    setErrors((prevErrors) => ({
-      ...prevErrors,
-      [name]: "",
-    }));
+    setFormData(updatedData);
+
+    setErrors((prevErrors) => {
+      const updatedErrors = { ...prevErrors };
+
+      // Validate password length while typing
+      if (name === "password") {
+        if (value && value.length < 6) {
+          updatedErrors.password = "Password must be at least 6 characters";
+        } else {
+          delete updatedErrors.password;
+        }
+      }
+
+      // Only validate confirm password after an attempted submission
+      if (
+        (name === "password" || name === "confirmPassword") &&
+        prevErrors.confirmPassword
+      ) {
+        if (
+          updatedData.confirmPassword &&
+          updatedData.password !== updatedData.confirmPassword
+        ) {
+          updatedErrors.confirmPassword = "Passwords do not match";
+        } else if (
+          !updatedData.confirmPassword &&
+          prevErrors.confirmPassword === "Please confirm your password"
+        ) {
+          updatedErrors.confirmPassword = "Please confirm your password";
+        } else {
+          delete updatedErrors.confirmPassword;
+        }
+      }
+
+      // Clear other field errors when edited
+      if (name !== "password" && name !== "confirmPassword") {
+        delete updatedErrors[name];
+      }
+
+      return updatedErrors;
+    });
+
+    setServerError("");
   }
 
   // Validates registration form values
@@ -46,9 +93,7 @@ function Register() {
 
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
-    } else if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)
-    ) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Please enter a valid email";
     }
 
@@ -68,33 +113,55 @@ function Register() {
   }
 
   // Handles form submission
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
+    setServerError("");
 
     const validationErrors = validate();
-
     setErrors(validationErrors);
 
-    // Stop submission if validation errors exist
     if (Object.keys(validationErrors).length > 0) {
       return;
     }
 
-    // API integration will happen on Day 9
-    // Do not log passwords in production
-    console.log("Registration data:", {
-      name: formData.name,
-      email: formData.email,
-    });
+    setIsSubmitting(true);
+
+    try {
+      // Send only the required fields to the backend
+      await registerUser({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      // Registration successful: redirect to login
+      navigate("/login");
+    } catch (error) {
+      const message = error.response?.data?.message;
+
+      if (message) {
+        setServerError(message);
+      } else if (!error.response) {
+        setServerError("Cannot reach the server. Please try again.");
+      } else {
+        setServerError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-8">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-
-        {/* Page heading */}
-        <h1 className="mb-6 text-center text-2xl font-bold">
-          Create an Account
+    <AuthLayout
+      panelSide="right"
+      heading="Join Taskflow!"
+      description="Bring your tasks together, stay organized and achieve more every day."
+      switchLabel="Already have an account? Login"
+      switchTo="/login"
+    >
+      <>
+        <h1 className="mb-6 text-center text-2xl font-bold text-slate-900">
+          Create your account
         </h1>
 
         <form onSubmit={handleSubmit}>
@@ -120,7 +187,7 @@ function Register() {
             placeholder="Enter your email"
           />
 
-          {/* Password input with independent visibility */}
+          {/* Password input */}
           <div className="relative">
             <FormInput
               label="Password"
@@ -141,7 +208,7 @@ function Register() {
             </button>
           </div>
 
-          {/* Confirm Password input with independent visibility */}
+          {/* Confirm password input */}
           <div className="relative">
             <FormInput
               label="Confirm Password"
@@ -155,21 +222,27 @@ function Register() {
 
             <button
               type="button"
-              onClick={() =>
-                setShowConfirmPassword((prev) => !prev)
-              }
+              onClick={() => setShowConfirmPassword((prev) => !prev)}
               className="absolute right-3 top-9 text-sm text-blue-600"
             >
               {showConfirmPassword ? "Hide" : "Show"}
             </button>
           </div>
 
+          {/* Backend or network errors */}
+          {serverError && (
+            <p className="mb-4 text-sm text-red-500" role="alert">
+              {serverError}
+            </p>
+          )}
+
           {/* Submit button */}
           <button
             type="submit"
-            className="w-full rounded-md bg-blue-600 py-2 font-semibold text-white hover:bg-blue-700"
+            disabled={isSubmitting}
+            className="w-full rounded-md bg-blue-600 py-2 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Register
+            {isSubmitting ? "Registering..." : "Register"}
           </button>
         </form>
 
@@ -183,9 +256,8 @@ function Register() {
             Log in
           </Link>
         </p>
-
-      </div>
-    </div>
+      </>
+    </AuthLayout>
   );
 }
 

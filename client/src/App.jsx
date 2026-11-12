@@ -1,33 +1,28 @@
-import { Routes, Route } from "react-router";
+import { Routes, Route, useLocation } from "react-router";
 
-// Import all page components
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Tasks from "./pages/Tasks";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
-
 import Navbar from "./components/Navbar";
 
 function App() {
+  const location = useLocation();
+
+  // Hide the main navigation on authentication pages
+  const isAuthPage =
+    location.pathname === "/login" || location.pathname === "/register";
+
   return (
     <>
-      <Navbar/>
-      
+      {!isAuthPage && <Navbar />}
+
       <Routes>
-        {/* Home page */}
         <Route path="/" element={<Tasks />} />
-
-        {/* Login page */}
         <Route path="/login" element={<Login />} />
-
-        {/* Register page */}
         <Route path="/register" element={<Register />} />
-
-        {/* Dashboard page */}
         <Route path="/dashboard" element={<Dashboard />} />
-
-        {/* Handle unknown URLs */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>

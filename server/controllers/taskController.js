@@ -5,8 +5,8 @@ const createTask = async (req, res, next) => {
   try {
     const { title, description } = req.body;
 
-    // Check whether title is provided and not empty
-    if (!title || !title.trim()) {
+    // Check whether title is a string and is not empty
+    if (typeof title !== "string" || !title.trim()) {
       return res.status(400).json({
         message: "Task title is required",
       });

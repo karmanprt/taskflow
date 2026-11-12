@@ -1,7 +1,11 @@
+
 require("dotenv").config();
-const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 const express = require("express");
+const cors = require("cors");
+
+const { notFound, errorHandler } = require("./middleware/errorMiddleware");
+
 const app = express();
 
 const port = process.env.PORT || 4000;
@@ -10,12 +14,21 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 
-// Middleware: Parse incoming JSON bodies
+// Parse incoming JSON request bodies
 app.use(express.json());
+
+// Allow requests from our React development server
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  })
+);
+
+// Register API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 
-// GET route
+// Root route
 app.get("/", (req, res) => {
   res.send("TaskFlow API is running");
 });
@@ -25,15 +38,10 @@ app.get("/api/health", (req, res) => {
   res.send({ status: "ok" });
 });
 
-// POST route: Echo the received JSON
-app.post("/api/echo", (req, res) => {
-  res.send(req.body);
-});
-
-// Handle requests to unknown routes
+// Handle unknown routes
 app.use(notFound);
 
-// Handle errors forwarded by next(error)
+// Handle application errors
 app.use(errorHandler);
 
 // Start server after database connection

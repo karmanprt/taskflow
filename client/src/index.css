@@ -1,1 +1,99 @@
 @import "tailwindcss";
+
+/* ========================================
+   TASKFLOW DESIGN SYSTEM
+======================================== */
+
+:root {
+  /* Brand colours */
+  --tf-primary: #2563eb;
+  --tf-primary-hover: #1d4ed8;
+  --tf-primary-light: #dbeafe;
+
+  /* Backgrounds */
+  --tf-page-bg: #f1f5f9;
+  --tf-surface: #ffffff;
+  --tf-brand-dark: #101c38;
+
+  /* Text */
+  --tf-text-primary: #0f172a;
+  --tf-text-secondary: #64748b;
+  --tf-text-muted: #94a3b8;
+
+  /* Borders */
+  --tf-border: #e2e8f0;
+  --tf-input-border: #cbd5e1;
+
+  /* Feedback */
+  --tf-error: #dc2626;
+  --tf-success: #16a34a;
+
+  /* Typography */
+  --tf-font: Inter, ui-sans-serif, system-ui, sans-serif;
+
+  /* Border radius */
+  --tf-radius-sm: 8px;
+  --tf-radius-md: 12px;
+  --tf-radius-lg: 18px;
+  --tf-radius-xl: 24px;
+
+  /* Shadows */
+  --tf-shadow-card: 0 20px 50px rgba(15, 23, 42, 0.08);
+
+  --tf-shadow-panel: 0 12px 30px rgba(15, 23, 42, 0.16);
+
+  /* Animation */
+  --tf-transition-fast: 200ms ease;
+  --tf-transition-normal: 350ms ease;
+  --tf-transition-panel: 800ms cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+/* Consistent box sizing */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Global typography */
+body {
+  font-family: var(--tf-font);
+  color: var(--tf-text-primary);
+}
+
+/* Accessibility: reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ========================================
+   TYPEWRITER HEADING
+======================================== */
+
+.typewriter-cursor {
+  display: inline-block;
+  margin-left: 3px;
+  color: var(--tf-primary);
+  font-weight: 400;
+  animation: cursorBlink 0.8s step-end infinite;
+}
+
+@keyframes cursorBlink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typewriter-cursor {
+    animation: none;
+    opacity: 0;
+  }
+}
