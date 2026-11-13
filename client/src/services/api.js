@@ -5,22 +5,40 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
 
-// Run this function before every API request
+// Request interceptor: attach JWT to API requests
 api.interceptors.request.use(
   (config) => {
-    // Read the JWT from browser localStorage
     const token = localStorage.getItem("token");
 
-    // Add the token to the request if it exists
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Return the updated request configuration
     return config;
   },
+  (error) => Promise.reject(error),
+);
+
+// Response interceptor: handle expired or invalid JWTs
+api.interceptors.response.use(
+  (response) => response,
   (error) => {
-    // Forward request errors
+    const status = error.response?.status;
+    const requestUrl = error.config?.url || "";
+
+    // Don't redirect for login or registration failures
+    const isAuthRequest = /\/auth\/(login|register)(?:[?#]|$)/.test(requestUrl);
+
+    if (status === 401 && !isAuthRequest) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      // Redirect to login and prevent returning to the previous page
+      if (window.location.pathname !== "/login") {
+        window.location.replace("/login");
+      }
+    }
+
     return Promise.reject(error);
   },
 );

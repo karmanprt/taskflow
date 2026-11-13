@@ -181,6 +181,7 @@ function Register() {
             label="Email"
             type="email"
             name="email"
+            autoComplete="email"
             value={formData.email}
             onChange={handleChange}
             error={errors.email}
@@ -193,6 +194,7 @@ function Register() {
               label="Password"
               type={showPassword ? "text" : "password"}
               name="password"
+              autoComplete="new-password"
               value={formData.password}
               onChange={handleChange}
               error={errors.password}
@@ -214,6 +216,7 @@ function Register() {
               label="Confirm Password"
               type={showConfirmPassword ? "text" : "password"}
               name="confirmPassword"
+              autoComplete="new-password"
               value={formData.confirmPassword}
               onChange={handleChange}
               error={errors.confirmPassword}

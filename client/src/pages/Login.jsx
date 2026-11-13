@@ -131,6 +131,7 @@ function Login() {
             label="Email"
             type="email"
             name="email"
+            autoComplete="email"
             value={formData.email}
             onChange={handleChange}
             error={errors.email}
@@ -143,6 +144,7 @@ function Login() {
               label="Password"
               type={showPassword ? "text" : "password"}
               name="password"
+              autoComplete="current-password"
               value={formData.password}
               onChange={handleChange}
               error={errors.password}

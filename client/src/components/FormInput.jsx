@@ -1,4 +1,4 @@
-function FormInput({ label, type, name, value, onChange, error, placeholder }) {
+function FormInput({ label, autoComplete, type, name, value, onChange, error, placeholder }) {
   return (
     <div className="mb-4">
       <label htmlFor={name} className="mb-1 block text-sm font-medium">
@@ -9,6 +9,7 @@ function FormInput({ label, type, name, value, onChange, error, placeholder }) {
         id={name}
         type={type}
         name={name}
+        autoComplete={autoComplete}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
